@@ -1,22 +1,33 @@
 
-This branch is used to implement porting freertos-basic onto STM32F4 Discovery.
+This branch is used to run the FreeRTOS basic shell template on STM32F407G-DISC1.
 
-We adpated TheKK/myFreeRTOS. 
+We adapted TheKK/myFreeRTOS.
 
-The source code of FreeRTOS kernel are in folder FreeRTOS. 
+The source code of FreeRTOS kernel is in `freertos/FreeRTOS`.
 
-Application codes are in Source/app and main.c in the same folder. This folder is FreeRTOS/Demo/CORTEX_M4F_STM32F407ZG-SK.
+Application code is in `source/main.c` and `source/lib`.
 
-Version of kernel is 8.2.1.
+The build targets STM32F407VGT6 with:
 
+- `STM32F40_41xxx`
+- 168 MHz system clock from 8 MHz HSE
+- 1 MB flash
+- 128 KB SRAM plus 64 KB CCMRAM
+- USART2 on PA2/PA3 at 115200 baud for the shell
 
-In Utilities/, **STM32F429I-Discovery** include library in **Common/** and **Third_Party**. As a result, do not remove them even if they were not mentioned in Makefile.  This folder is ST-supported drivers.
+The STM32F429I-Discovery LCD/SDRAM board support code is kept in the tree but is not used by this target.
 
 
 ## Flash
-1. Dowload the source code: `git clone git@github.com:Justinsanity/freertos-basic`
+1. Download the source code: `git clone git@github.com:Justinsanity/freertos-basic`
 2. Get into the project: `cd freertos-basic`
-3. Checkout to the porting branch: `git checkout porting`
+3. Make sure `arm-none-eabi-gcc`, `arm-none-eabi-ld`, `arm-none-eabi-objcopy`, Arm newlib, and `st-flash` are installed.
 4. Compile: `make`
 5. Flash: `make flash`
 
+For the shell, connect an external USB-UART adapter:
+
+- PA2: USART2 TX
+- PA3: USART2 RX
+- GND: common ground
+- Baud rate: 115200 8N1

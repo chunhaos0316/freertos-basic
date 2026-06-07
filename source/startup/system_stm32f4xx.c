@@ -46,9 +46,9 @@
   *-----------------------------------------------------------------------------
   *        System Clock source                    | PLL (HSE)
   *-----------------------------------------------------------------------------
-  *        SYSCLK(Hz)                             | 150000000
+ *        SYSCLK(Hz)                             | 168000000
   *-----------------------------------------------------------------------------
-  *        HCLK(Hz)                               | 150000000
+ *        HCLK(Hz)                               | 168000000
   *-----------------------------------------------------------------------------
   *        AHB Prescaler                          | 1
   *-----------------------------------------------------------------------------
@@ -56,11 +56,11 @@
   *-----------------------------------------------------------------------------
   *        APB2 Prescaler                         | 2
   *-----------------------------------------------------------------------------
-  *        HSE Frequency(Hz)                      | 25000000
+ *        HSE Frequency(Hz)                      | 8000000
   *-----------------------------------------------------------------------------
-  *        PLL_M                                  | 25
+ *        PLL_M                                  | 8
   *-----------------------------------------------------------------------------
-  *        PLL_N                                  | 300
+ *        PLL_N                                  | 336
   *-----------------------------------------------------------------------------
   *        PLL_P                                  | 2
   *-----------------------------------------------------------------------------
@@ -146,8 +146,8 @@
 
 /************************* PLL Parameters *************************************/
 /* PLL_VCO = (HSE_VALUE or HSI_VALUE / PLL_M) * PLL_N */
-#define PLL_M      25
-#define PLL_N      300
+#define PLL_M      8
+#define PLL_N      336
 
 /* SYSCLK = PLL_VCO / PLL_P */
 #define PLL_P      2
@@ -173,7 +173,7 @@
   * @{
   */
 
-  uint32_t SystemCoreClock = 150000000;
+  uint32_t SystemCoreClock = 168000000;
 
   __I uint8_t AHBPrescTable[16] = {0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 6, 7, 8, 9};
 
@@ -392,14 +392,14 @@ static void SetSysClock(void)
     }
    
     /* Configure Flash prefetch, Instruction cache, Data cache and wait state */
-    FLASH->ACR = FLASH_ACR_ICEN |FLASH_ACR_DCEN |FLASH_ACR_LATENCY_4WS;
+    FLASH->ACR = FLASH_ACR_PRFTEN | FLASH_ACR_ICEN | FLASH_ACR_DCEN | FLASH_ACR_LATENCY_5WS;
 
     /* Select the main PLL as system clock source */
     RCC->CFGR &= (uint32_t)((uint32_t)~(RCC_CFGR_SW));
     RCC->CFGR |= RCC_CFGR_SW_PLL;
 
     /* Wait till the main PLL is used as system clock source */
-    while ((RCC->CFGR & (uint32_t)RCC_CFGR_SWS ) != RCC_CFGR_SWS_PLL);
+    while ((RCC->CFGR & (uint32_t)RCC_CFGR_SWS ) != RCC_CFGR_SWS_PLL)
     {
     }
   }

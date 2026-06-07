@@ -1,5 +1,4 @@
 #include "stm32f4xx.h"
-//#include "stm32_p103.h"
 /* Scheduler includes. */
 #include "main.h"
 #include "FreeRTOS.h"
@@ -28,30 +27,69 @@ volatile xSemaphoreHandle serial_tx_wait_sem = NULL;
 /* Add for serial input */
 volatile xQueueHandle serial_rx_queue = NULL;
 
- void prvInit()
-  {
-    //LCD init
-    LCD_Init();
-    IOE_Config();
-    LTDC_Cmd( ENABLE );
+static void board_init(void)
+{
+    GPIO_InitTypeDef GPIO_InitStructure;
+    USART_InitTypeDef USART_InitStructure;
+    NVIC_InitTypeDef NVIC_InitStructure;
 
-    LCD_LayerInit();
-    LCD_SetLayer( LCD_FOREGROUND_LAYER );
-    LCD_Clear( LCD_COLOR_BLACK );
-    LCD_SetTextColor( LCD_COLOR_WHITE );
-		LCD_SetBackColor( LCD_COLOR_BLACK );  
-    //Button
-    STM_EVAL_PBInit( BUTTON_USER, BUTTON_MODE_GPIO );
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA | RCC_AHB1Periph_GPIOD, ENABLE);
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE);
 
-    //LED
-    STM_EVAL_LEDInit( LED3 );
-  }
+    /* STM32F407G-DISC1 LEDs: PD12 green, PD13 orange, PD14 red, PD15 blue. */
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
+    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_Init(GPIOD, &GPIO_InitStructure);
+    GPIO_ResetBits(GPIOD, GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15);
+
+    /* User button: PA0. */
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
+    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_Init(GPIOA, &GPIO_InitStructure);
+
+    /* USART2 on PA2 TX and PA3 RX. Connect an external USB-UART adapter. */
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource2, GPIO_AF_USART2);
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource3, GPIO_AF_USART2);
+
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2 | GPIO_Pin_3;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_Init(GPIOA, &GPIO_InitStructure);
+
+    USART_InitStructure.USART_BaudRate = 115200;
+    USART_InitStructure.USART_WordLength = USART_WordLength_8b;
+    USART_InitStructure.USART_StopBits = USART_StopBits_1;
+    USART_InitStructure.USART_Parity = USART_Parity_No;
+    USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+    USART_InitStructure.USART_Mode = USART_Mode_Tx | USART_Mode_Rx;
+    USART_Init(USART2, &USART_InitStructure);
+
+    USART_ITConfig(USART2, USART_IT_TXE, DISABLE);
+    USART_ITConfig(USART2, USART_IT_RXNE, ENABLE);
+
+    NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4);
+    NVIC_InitStructure.NVIC_IRQChannel = USART2_IRQn;
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 12;
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+    NVIC_Init(&NVIC_InitStructure);
+
+    USART_Cmd(USART2, ENABLE);
+}
 
 /* IRQ handler to handle USART2 interruptss (both transmit and receive
  * interrupts). */
 void USART2_IRQHandler()
 {
-	static signed portBASE_TYPE xHigherPriorityTaskWoken;
+	signed portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
 
 	/* If this interrupt is for a transmit... */
 	if (USART_GetITStatus(USART2, USART_IT_TXE) != RESET) {
@@ -169,40 +207,17 @@ void system_logger(void *pvParameters)
 
 int main()
 {
-
-#if 0
-	//init_rs232();
-	//enable_rs232_interrupts();
-	//enable_rs232();
 	fs_init();
 	fio_init();
-	//register_romfs("romfs", &_sromfs);
-#endif	
-
-prvInit();
-
-#if 1 //test LCD Library
-LCD_DrawFullCircle(100, 100, 50); // (x, y, radius)
-
-//LCD_DisplayStringLine(uint16_t Line, uint8_t *ptr);
-uint8_t str[] = {'H', 'i', '!', ' ', 'V', 'e', 'c', 'k'};
-LCD_DisplayStringLine(0, str);
-
-//LCD_DrawChar(uint16_t Xpos, uint16_t Ypos, const uint16_t *c);
-// uint16_t Xpos = 23;
-// uint16_t Ypos = 220;
-// const uint16_t c = 'A';
-// LCD_DrawChar(Xpos, Ypos, &c);
-
-//LCD_DisplayChar(uint16_t Line, uint16_t Column, uint8_t Ascii);
-//LCD_DisplayChar(170, 45, 0x97);
-#endif	
 	/* Create the queue used by the serial task.  Messages for write to
 	 * the RS232. */
 	vSemaphoreCreateBinary(serial_tx_wait_sem);
 	/* Add for serial input 
 	 * Reference: www.freertos.org/a00116.html */
-	serial_rx_queue = xQueueCreate(1, sizeof(char));
+	serial_rx_queue = xQueueCreate(64, sizeof(char));
+
+	board_init();
+	GPIO_SetBits(GPIOD, GPIO_Pin_12);
 
 	register_devfs();
 	/* Create a task to output text read from romfs. */

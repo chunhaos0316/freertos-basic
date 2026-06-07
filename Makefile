@@ -1,11 +1,8 @@
-PROJECT = usart1
+PROJECT = stm32f407g_disc1_freertos
 
 EXECUTABLE = $(PROJECT).elf
 BIN_IMAGE = $(PROJECT).bin
 HEX_IMAGE = $(PROJECT).hex
-
-# set the path to STM32F429I-Discovery firmware package
-# STDP ?= ../STM32F429I-Discovery_FW_V1.0.1
 
 # Toolchain configurations
 CROSS_COMPILE ?= arm-none-eabi-
@@ -34,8 +31,8 @@ CFLAGS += -ffunction-sections -fdata-sections
 CFLAGS += -fno-common
 CFLAGS += --param max-inline-insns-single=1000
 
-# specify STM32F429
-CFLAGS += -DSTM32F429_439xx
+# specify STM32F407VG
+CFLAGS += -DSTM32F40_41xxx
 
 # STM32F4xx_StdPeriph_Driver
 CFLAGS += -DUSE_STDPERIPH_DRIVER
@@ -47,8 +44,7 @@ CFLAGS += -I $(PWD)/source \
 		-I $(RTOS)/include \
 		-I $(RTOS)/portable/GCC/ARM_CM4F \
 		-I $(PWD)/freertos/CMSIS/Include \
-		-I $(PWD)/freertos/STM32F4xx_StdPeriph_Driver/inc \
-		-I $(PWD)/Utilities/STM32F429I-Discovery 
+		-I $(PWD)/freertos/STM32F4xx_StdPeriph_Driver/inc
 SEMIHOSTING_FLAGS = --specs=rdimon.specs -lc -lrdimon
 
 define get_library_path
@@ -56,11 +52,11 @@ define get_library_path
 endef
 LDFLAGS += -L $(call get_library_path,libc.a)
 LDFLAGS += -L $(call get_library_path,libgcc.a)
-LDFLAGS += -T $(PWD)/source/stm32f429zi_flash.ld
+LDFLAGS += -T $(PWD)/source/stm32f407vg_flash.ld
 LDFLAGS += --gc-sections
 
 # STARTUP FILE
-OBJS += $(PWD)/source/startup_stm32f429_439xx.o
+OBJS += $(PWD)/source/startup_stm32f407xx.o
 
 #My restart
 OBJS += \
@@ -82,18 +78,7 @@ OBJS += \
     $(PWD)/freertos/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_gpio.o \
     $(PWD)/freertos/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_rcc.o \
     $(PWD)/freertos/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_usart.o \
-    $(PWD)/freertos/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_syscfg.o \
-    $(PWD)/freertos/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_i2c.o \
-    $(PWD)/freertos/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dma.o \
-    $(PWD)/freertos/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_spi.o \
-    $(PWD)/freertos/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_exti.o \
-    $(PWD)/freertos/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_dma2d.o \
-    $(PWD)/freertos/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_ltdc.o \
-    $(PWD)/freertos/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_fmc.o \
-    $(PWD)/Utilities/STM32F429I-Discovery/stm32f429i_discovery.o \
-    $(PWD)/Utilities/STM32F429I-Discovery/stm32f429i_discovery_sdram.o \
-    $(PWD)/Utilities/STM32F429I-Discovery/stm32f429i_discovery_lcd.o \
-    $(PWD)/Utilities/STM32F429I-Discovery/stm32f429i_discovery_ioe.o
+    $(PWD)/freertos/STM32F4xx_StdPeriph_Driver/src/stm32f4xx_syscfg.o
 
 #Custom C Library
 OBJS += \
@@ -147,4 +132,3 @@ gdb: all
 
 openocd:
 	openocd -f board/stm32f4discovery.cfg
- 

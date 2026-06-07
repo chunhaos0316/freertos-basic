@@ -30,9 +30,11 @@
 #define __MAIN_H
 
 /* Includes ------------------------------------------------------------------*/
-#include "stm32f429i_discovery.h"
-#include "stm32f429i_discovery_lcd.h"
-#include "stm32f429i_discovery_ioe.h"
+#include "stm32f4xx.h"
+#include "stm32f4xx_gpio.h"
+#include "stm32f4xx_rcc.h"
+#include "stm32f4xx_usart.h"
+#include "misc.h"
 
 
 /* Exported types ------------------------------------------------------------*/
